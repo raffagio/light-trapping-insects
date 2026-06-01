@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2e7d32">
+  <title>Insect Order Identifier · Light Trap Prac</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #eaf0e7;
+      --bg2:     #f6f9f4;
+      --card:    #ffffff;
+      --green:   #2e7d32;
+      --green-d: #1b5e20;
+      --green-l: #e8f5e9;
+      --green-m: #a5d6a7;
+      --accent:  #43a047;
+      --text:    #18271a;
+      --muted:   #5a6e5a;
+      --border:  #d6e4d3;
+      --shadow:  0 1px 2px rgba(20,40,20,.04), 0 6px 16px rgba(20,40,20,.06), 0 14px 40px rgba(20,40,20,.05);
+      --shadow-sm: 0 1px 2px rgba(20,40,20,.05), 0 3px 10px rgba(20,40,20,.05);
+      --ring: rgba(67,160,71,.35);
+      --r: 20px;
+    }
+    :root[data-theme="dark"] {
+      --bg:      #0d130c;
+      --bg2:     #131b12;
+      --card:    #18211a;
+      --green:   #74cf73;
+      --green-d: #5bb35a;
+      --green-l: #1d2a1d;
+      --green-m: #34522f;
+      --accent:  #5bb35a;
+      --text:    #e8f1e7;
+      --muted:   #9cb398;
+      --border:  #2b3a29;
+      --shadow:  0 1px 2px rgba(0,0,0,.3), 0 8px 30px rgba(0,0,0,.45);
+      --shadow-sm: 0 2px 12px rgba(0,0,0,.4);
+      --ring: rgba(116,207,115,.3);
+    }
+    html { -webkit-text-size-adjust: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; background: var(--bg); background-image: radial-gradient(1200px 500px at 50% -10%, var(--bg2), transparent 70%); background-attachment: fixed; min-height: 100dvh; padding: 8px 14px calc(48px + env(safe-area-inset-bottom)); color: var(--text); transition: background-color .3s, color .3s; }
+    .wrap { max-width: 480px; margin: 0 auto; }
+
+    header { padding: 20px 0 14px; }
+    .head-row { display: flex; align-items: center; justify-content: center; position: relative; }
+    .title { font-size: 1.32rem; font-weight: 800; letter-spacing: -.02em; text-align: center; background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .subtitle { font-size: .76rem; color: var(--muted); margin-top: 4px; text-align: center; letter-spacing: .01em; }
+    .theme-btn { position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 42px; height: 42px; font-size: 1.15rem; cursor: pointer; line-height: 1; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .2s, background .3s; -webkit-tap-highlight-color: transparent; }
+    .theme-btn:hover { box-shadow: 0 4px 14px var(--ring); }
+    .theme-btn:active { transform: translateY(-50%) scale(.9); }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 12px; background: var(--card); padding: 5px; border-radius: 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); position: sticky; top: 6px; z-index: 20; backdrop-filter: saturate(1.4); }
+    .tab { flex: 1; background: transparent; border: none; border-radius: 12px; padding: 11px 6px; font-size: .8rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: color .15s, background .2s, transform .1s; -webkit-tap-highlight-color: transparent; }
+    .tab.active { background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); color: #fff; box-shadow: 0 4px 12px var(--ring); }
+    .tab:not(.active):hover { color: var(--text); background: var(--green-l); }
+    .tab:active { transform: scale(.96); }
+    .badge { display: none; min-width: 19px; background: var(--green-m); color: var(--green-d); border-radius: 11px; font-size: .7rem; font-weight: 800; padding: 1px 6px; margin-left: 4px; }
+    .badge.show { display: inline-block; }
+    .tab.active .badge { background: rgba(255,255,255,.9); color: var(--green-d); }
+
+    /* ── Light bar ── */
+    #lightbar:not(:empty) { margin-bottom: 10px; }
+    .lb-label { font-size: .68rem; color: var(--muted); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .seg { display: flex; gap: 5px; background: var(--card); padding: 5px; border-radius: 14px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+    .seg button { flex: 1; background: transparent; border: none; border-radius: 10px; padding: 10px 4px; font-size: .82rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: .18s; -webkit-tap-highlight-color: transparent; }
+    .seg button.active { background: var(--green-l); color: var(--green-d); box-shadow: inset 0 0 0 1.5px var(--green-m); }
+    .seg button:active { transform: scale(.95); }
+
+    #trail { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 22px; margin-bottom: 8px; }
+    .chip { font-size: .68rem; background: var(--border); color: var(--muted); padding: 3px 9px; border-radius: 20px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sep  { font-size: .7rem; color: var(--muted); }
+
+    .card { background: var(--card); border-radius: var(--r); padding: 24px 20px; box-shadow: var(--shadow); border: 1px solid var(--border); animation: fade .3s cubic-bezier(.2,.7,.3,1); transition: background .3s, border-color .3s; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .card { animation: none; } * { transition: none !important; } }
+
+    /* ── Question ── */
+    .step-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: var(--green); font-weight: 700; margin-bottom: 9px; }
+    .q-text { font-size: 1.08rem; font-weight: 700; line-height: 1.55; }
+    .hint-box { margin-top: 10px; padding: 10px 12px; background: var(--green-l); border-left: 3px solid var(--green-m); border-radius: 0 10px 10px 0; font-size: .83rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── Glossary term ── */
+    .term { background: none; border: none; padding: 0; font: inherit; color: var(--green); font-weight: 700; border-bottom: 1.5px dashed var(--green-m); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .term:active { color: var(--green-d); }
+
+    /* ── Comparison photo grid ── */
+    .cmp-grid { display: grid; gap: 6px; margin-top: 12px; }
+    .cmp-grid.c2 { grid-template-columns: 1fr 1fr; }
+    .cmp-grid.c3 { grid-template-columns: 1fr 1fr 1fr; }
+    .cmp-item { border-radius: 10px; overflow: hidden; background: var(--green-l); aspect-ratio: 4/3; position: relative; }
+    .cmp-ph { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 2rem; }
+    .cmp-img { width: 100%; height: 100%; object-fit: cover; display: block; animation: fade .3s; }
+    .cmp-cap { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.55); color: #fff; font-size: .68rem; font-weight: 600; padding: 4px 6px; text-align: center; line-height: 1.3; }
+
+    /* ── Choices ── */
+    .choices { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .choice-btn { position: relative; width: 100%; background: var(--bg2); border: 1.5px solid var(--border); border-radius: 14px; padding: 15px 40px 15px 16px; text-align: left; cursor: pointer; font-size: .91rem; color: var(--text); line-height: 1.5; transition: border-color .15s, background .15s, transform .1s, box-shadow .15s; -webkit-tap-highlight-color: transparent; }
+    .choice-btn::after { content: '›'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--green-m); font-size: 1.3rem; font-weight: 700; transition: color .15s, transform .15s; }
+    .choice-btn:hover, .choice-btn:focus-visible { border-color: var(--green); background: var(--green-l); outline: none; box-shadow: 0 4px 14px var(--ring); }
+    .choice-btn:hover::after, .choice-btn:focus-visible::after { color: var(--green); transform: translateY(-50%) translateX(3px); }
+    .choice-btn:active { transform: scale(.985); }
+
+    /* ── Not-sure helper ── */
+    .btn-notsure { margin-top: 12px; width: 100%; background: var(--green-l); border: 1.5px dashed var(--green-m); border-radius: 12px; padding: 12px; color: var(--green-d); font-size: .85rem; font-weight: 600; cursor: pointer; transition: .12s; -webkit-tap-highlight-color: transparent; }
+    .btn-notsure:active { transform: scale(.98); }
+    .notsure { margin-top: 10px; border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--bg); animation: fade .2s; }
+    .ns-head { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+    .ns-choice { padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .ns-choice:last-child { border-bottom: none; }
+    .ns-label { font-size: .8rem; font-weight: 700; color: var(--text); line-height: 1.4; }
+    .ns-orders { font-size: .78rem; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+    .ns-quick { margin-top: 14px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+    .qchip { background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); color: #fff; border: none; border-radius: 16px; padding: 8px 13px; font-size: .78rem; font-weight: 600; cursor: pointer; box-shadow: 0 3px 10px var(--ring); transition: .15s; -webkit-tap-highlight-color: transparent; }
+    .qchip:hover { filter: brightness(1.06); }
+    .qchip:active { transform: scale(.94); }
+    .hidden { display: none; }
+
+    .nav-row { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-back, .btn-restart { background: none; border: 2px solid var(--border); border-radius: 11px; padding: 11px 15px; color: var(--muted); font-size: .87rem; cursor: pointer; transition: border-color .12s; -webkit-tap-highlight-color: transparent; }
+    .btn-restart { flex: 1; }
+    .btn-back:hover, .btn-restart:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── Result photo ── */
+    .photo-wrap { margin: -24px -20px 18px; height: 200px; border-radius: 19px 19px 0 0; overflow: hidden; background: var(--green-l); position: relative; }
+    .photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; animation: fade .35s; }
+    .photo-credit { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,.5); color: #fff; font-size: .62rem; padding: 2px 7px; }
+    .photo-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; font-size: 3rem; }
+
+    /* ── Result content ── */
+    .result-top { text-align: center; margin-bottom: 18px; }
+    .result-label  { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+    .result-order  { font-size: 1.95rem; font-weight: 900; letter-spacing: -.03em; margin: 3px 0 4px; background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .result-common { font-size: .95rem; color: var(--muted); }
+
+    .attract-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; padding: 5px 13px; border-radius: 20px; margin-top: 10px; }
+    .attract-high   { background: #fff8e1; color: #7c5a00; }
+    .attract-medium { background: #e3f2fd; color: #1a4e6e; }
+    .attract-low    { background: #fce4ec; color: #7c1a2e; }
+    [data-theme="dark"] .attract-high   { background: #3a3414; color: #ffd24d; }
+    [data-theme="dark"] .attract-medium { background: #13314a; color: #8fc8f0; }
+    [data-theme="dark"] .attract-low    { background: #3a1622; color: #f0a0b4; }
+
+    .features { background: var(--bg); border-radius: 12px; padding: 14px 16px; margin: 16px 0 4px; }
+    .features-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin-bottom: 10px; }
+    .features ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .features li { font-size: .87rem; color: var(--text); padding-left: 18px; position: relative; line-height: 1.45; }
+    .features li::before { content: '›'; position: absolute; left: 2px; color: var(--green); font-weight: 700; }
+
+    .result-nav { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .btn-log { width: 100%; background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%); border: none; border-radius: 14px; padding: 15px; color: #fff; font-weight: 700; font-size: .94rem; cursor: pointer; box-shadow: 0 6px 18px var(--ring); transition: filter .15s, transform .1s, box-shadow .2s; -webkit-tap-highlight-color: transparent; }
+    .btn-log:hover { filter: brightness(1.05); box-shadow: 0 8px 22px var(--ring); }
+    .btn-log:active { transform: scale(.98); }
+    .btn-primary   { background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); border: none; border-radius: 14px; padding: 15px; color: white; font-size: .97rem; font-weight: 700; cursor: pointer; box-shadow: 0 6px 18px var(--ring); transition: filter .15s, transform .1s, box-shadow .2s; -webkit-tap-highlight-color: transparent; }
+    .btn-primary:hover { filter: brightness(1.05); box-shadow: 0 8px 22px var(--ring); }
+    .btn-primary:active { transform: scale(.985); }
+    .btn-secondary { background: none; border: 2px solid var(--border); border-radius: 13px; padding: 12px; color: var(--muted); font-size: .9rem; cursor: pointer; transition: border-color .12s; -webkit-tap-highlight-color: transparent; }
+    .btn-secondary:hover { border-color: var(--muted); }
+
+    /* ── No-wings ── */
+    .no-wings-box { background: #fff8e1; border: 2px solid #ffe082; border-radius: 13px; padding: 15px; margin-top: 14px; font-size: .88rem; line-height: 1.55; color: #5d4037; }
+    .no-wings-box strong { display: block; margin-bottom: 5px; }
+    [data-theme="dark"] .no-wings-box { background: #2a2510; border-color: #4a4220; color: #e8d9a8; }
+
+    /* ── Tally view ── */
+    .tally-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    .tally-table th, .tally-table td { padding: 9px 5px; text-align: center; font-size: .85rem; border-bottom: 1px solid var(--border); }
+    .tally-table th { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
+    .tally-table td:first-child, .tally-table th:first-child { text-align: left; font-weight: 600; }
+    .tally-table tfoot td { font-weight: 800; border-top: 2px solid var(--border); border-bottom: none; color: var(--green); }
+    .tally-table .zero { color: var(--border); }
+    .tally-actions { display: flex; gap: 8px; margin-top: 18px; }
+    .btn-export { flex: 1; background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); border: none; border-radius: 13px; padding: 14px; color: #fff; font-weight: 700; font-size: .88rem; cursor: pointer; box-shadow: 0 5px 16px var(--ring); transition: filter .15s, transform .1s; -webkit-tap-highlight-color: transparent; }
+    .btn-export:hover { filter: brightness(1.05); }
+    .btn-export:active { transform: scale(.98); }
+    .btn-clear { background: none; border: 2px solid var(--border); border-radius: 12px; padding: 13px 16px; color: var(--muted); font-size: .88rem; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .empty { text-align: center; color: var(--muted); padding: 36px 12px; font-size: .92rem; line-height: 1.7; }
+    .csv-out { width: 100%; height: 150px; margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px; font-family: monospace; font-size: .75rem; background: var(--bg); color: var(--text); resize: vertical; }
+
+    /* ── Terms view ── */
+    .terms-intro { font-size: .85rem; color: var(--muted); line-height: 1.55; margin-bottom: 14px; }
+    .term-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .term-row:last-child { border-bottom: none; }
+    .term-name { font-weight: 800; color: var(--green); text-transform: capitalize; font-size: .92rem; margin-bottom: 3px; }
+    .term-def { font-size: .84rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── Popover ── */
+    #popover { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,.5); z-index: 50; animation: fade .15s; }
+    #popover.show { display: flex; }
+    .pop-card { background: var(--card); border-radius: 16px; padding: 22px; max-width: 340px; width: 100%; box-shadow: var(--shadow); }
+    .pop-term { font-size: 1.15rem; font-weight: 800; color: var(--green); text-transform: capitalize; margin-bottom: 8px; }
+    .pop-def { font-size: .9rem; line-height: 1.6; color: var(--text); }
+    .pop-close { margin-top: 16px; width: 100%; background: var(--green); border: none; border-radius: 12px; padding: 12px; color: #fff; font-weight: 700; font-size: .9rem; cursor: pointer; }
+
+    /* ── Toast ── */
+    #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--green-d); color: #fff; padding: 12px 20px; border-radius: 24px; font-size: .85rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 60; box-shadow: 0 4px 18px rgba(0,0,0,.3); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="head-row">
+      <div class="title">🔦 Insect Order Identifier</div>
+      <button id="themeBtn" class="theme-btn" aria-label="Toggle dark mode">🌙</button>
+    </div>
+    <p class="subtitle">Light Trapping Field Prac · BZ2490-5990</p>
+  </header>
+  <nav class="tabs">
+    <button class="tab" data-view="identify">🔍 Identify</button>
+    <button class="tab" data-view="tally">📋 Tally<span class="badge" id="tabBadge"></span></button>
+    <button class="tab" data-view="terms">📖 Terms</button>
+  </nav>
+  <div id="lightbar"></div>
+  <div id="trail"></div>
+  <div id="app" class="card"></div>
+</div>
+<div id="popover"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ── Comparison photos for key questions ───────────────────────────────────────
+const COMPARE = {
+  wingCount: [
+    { article: 'Housefly',       caption: '2 wings + halteres',    emoji: '🪰' },
+    { article: 'Honey bee',      caption: '4 wings (fore + hind)', emoji: '🐝' },
+  ],
+  scales: [
+    { article: 'Butterfly',      caption: 'Scaled — powdery',      emoji: '🦋' },
+    { article: 'Green lacewing', caption: 'Clear / hairy — veins', emoji: '🦟' },
+  ],
+  mouthparts: [
+    { article: 'Hemiptera',      caption: 'Sucking — beak',        emoji: '🐛' },
+    { article: 'Mayfly',         caption: 'Reduced — no feeding',  emoji: '🦋' },
+    { article: 'Stag beetle',    caption: 'Chewing — mandibles',   emoji: '🪲' },
+  ],
+  flatWings: [
+    { article: 'Stonefly',       caption: 'Flat over body',        emoji: '🪲' },
+    { article: 'Green lacewing', caption: 'Tent / upright',        emoji: '🦟' },
+  ],
+  hindWingFlat: [
+    { article: 'Stonefly',       caption: 'Hind wing larger',      emoji: '🪲' },
+    { article: 'Termite',        caption: 'Equal + broad waist',   emoji: '🐜' },
+  ],
+  hindWingUp: [
+    { article: 'Wasp',           caption: 'Hind much smaller',     emoji: '🐝' },
+    { article: 'Neuroptera',     caption: 'Hind ≈ same size',      emoji: '🦟' },
+  ],
+  abdomenTip: [
+    { article: 'Earwig',         caption: 'Pincers at tip',        emoji: '🦗' },
+    { article: 'Grasshopper',    caption: 'Jumping hind legs',     emoji: '🦗' },
+    { article: 'Beetle',         caption: 'Hard elytra seam',      emoji: '🪲' },
+  ],
+};
+
+// ── Glossary ──────────────────────────────────────────────────────────────────
+const GDEF = {
+  haltere:        'Tiny club-shaped balancing organ that replaces the hind wing in flies (Diptera).',
+  scale:          'Minute flattened plates covering the wings of moths and butterflies — they rub off as fine powder.',
+  proboscis:      'Coiled, tube-like mouthpart that moths and butterflies use to drink nectar.',
+  scutellum:      'Triangular shield-shaped plate on top of the thorax, often visible between the wing bases of bugs.',
+  hemelytra:      'The front wings of true bugs — leathery at the base and membranous at the tip.',
+  cerci:          'Paired appendages at the tip of the abdomen — pincers in earwigs, long tails in mayflies.',
+  petiole:        'The narrow "wasp waist" connecting the thorax and abdomen in wasps, bees and ants.',
+  tegmina:        'The tough, leathery, parchment-like front wings of grasshoppers and crickets.',
+  elytra:         'The hardened front wing-covers of beetles that meet in a straight line down the back.',
+  alate:          'A winged reproductive insect — e.g. a swarming termite before it sheds its wings.',
+  rostrum:        'A beak-like piercing mouthpart projecting from the head of sucking bugs.',
+  venation:       "The pattern of veins across an insect's wing.",
+  'compound eye': 'A large eye built from many individual lenses (facets); enormous in dragonflies.',
+  antenna:        'Paired sensory feelers on the head, used for smell and touch.',
+  ocelli:         'Simple single-lens eyes, usually a group of three on top of the head.',
+  thorax:         'The middle body section that bears the legs and wings.',
+  abdomen:        'The rear body section containing the digestive and reproductive organs.',
+  membranous:     'Thin, clear and flexible — describing delicate wings.',
+  mandible:       'A biting and chewing jaw.',
+  larva:          'An immature, often grub- or caterpillar-like stage before metamorphosis.',
+  nymph:          'An immature stage that looks like a small, wingless version of the adult.',
+};
+// Surface form (lowercase) → canonical key in GDEF
+const FORMS = {
+  halteres:'haltere', haltere:'haltere',
+  scales:'scale', scale:'scale', scaly:'scale',
+  proboscis:'proboscis',
+  scutellum:'scutellum',
+  hemelytra:'hemelytra',
+  cerci:'cerci',
+  petiole:'petiole',
+  tegmina:'tegmina',
+  elytra:'elytra',
+  alates:'alate', alate:'alate',
+  rostrum:'rostrum',
+  venation:'venation',
+  'compound eyes':'compound eye', 'compound eye':'compound eye',
+  antennae:'antenna', antenna:'antenna',
+  ocelli:'ocelli',
+  thorax:'thorax',
+  abdomen:'abdomen',
+  membranous:'membranous',
+  mandibles:'mandible', mandible:'mandible',
+  larvae:'larva', larva:'larva',
+  nymphs:'nymph', nymph:'nymph',
+};
+const GLOSSARY_RE = new RegExp(
+  '\\b(' + Object.keys(FORMS).sort((a,b)=>b.length-a.length).join('|') + ')\\b', 'gi'
+);
+
+// ── Data helpers ──────────────────────────────────────────────────────────────
+function nd(q, hint, choices, compareKey) { return { _t:'node', q, hint, choices, compareKey }; }
+function ch(label, next)                  { return { label, next }; }
+function res(order, common, emoji, attract, wiki, facts) {
+  return { _t:'result', order, common, emoji, attract, wiki, facts };
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+const R = {
+  diptera:      res('Diptera',      'Flies',                       '🪰','high',  'Housefly',
+    ['Only 2 functional wings — hindwings reduced to club-shaped halteres',
+     'Diverse: mosquitoes, midges, march flies, hoverflies, crane flies',
+     'Strongly attracted to most light colours',
+     'Soft body; large compound eyes very common']),
+
+  lepidoptera:  res('Lepidoptera',  'Butterflies & Moths',         '🦋','high',  'Moth',
+    ['Wings covered in overlapping scales — feels powdery to the touch',
+     'Moths vastly outnumber butterflies at light traps',
+     'Coiled proboscis for nectar feeding',
+     'Larvae are caterpillars']),
+
+  hemiptera:    res('Hemiptera',    '"True Bugs"',                 '🐛','medium','Hemiptera',
+    ['Front wings (hemelytra) leathery at base, membranous at tip',
+     'Piercing beak (rostrum) arises from the front of the head',
+     'Includes stink bugs, water bugs, assassin bugs, shield bugs',
+     'Triangle (scutellum) often visible between wing bases']),
+
+  homoptera:    res('Homoptera',    'Cicadas, Leafhoppers & Aphids','🦗','medium','Cicada',
+    ['Wings held tent-like over abdomen at rest',
+     'Scutellum triangle often outlined by folded wings',
+     'All feed by sucking plant sap',
+     'Includes cicadas, leafhoppers, planthoppers, aphids']),
+
+  thysanoptera: res('Thysanoptera', 'Thrips',                      '🦠','low',   'Thrips',
+    ['Minute insects — typically only 1–2 mm long',
+     'Wings very narrow with long fringe of hairs (feather-like)',
+     'Asymmetric rasping-sucking mouthparts',
+     'Pest of many crops; feeding causes silvering of leaves']),
+
+  ephemeroptera:res('Ephemeroptera','Mayflies',                    '🦋','high',  'Mayfly',
+    ['Adults live only hours to days and cannot feed',
+     '2–3 long thread-like tails (cerci) at abdomen tip',
+     'Dense netlike venation; small triangular hindwings',
+     'Strongly attracted to lights; found near water']),
+
+  trichoptera:  res('Trichoptera',  'Caddisflies',                 '🦟','high',  'Caddisfly',
+    ['Wings covered in fine hairs — NOT scales (unlike moths)',
+     'Antennae as long as or longer than the body',
+     'Larvae are aquatic and build portable cases',
+     'Attracted to light; common near streams and lakes']),
+
+  dermaptera:   res('Dermaptera',   'Earwigs',                     '🦗','low',   'Earwig',
+    ['Distinctive pincers (cerci) at abdomen tip — harmless to humans',
+     'Front wings very short and leathery; large hind wings folded beneath',
+     'Nocturnal scavengers — occasionally attracted to lights',
+     'Despite the name, do not crawl into ears']),
+
+  orthoptera:   res('Orthoptera',   'Grasshoppers & Crickets',     '🦗','low',   'Grasshopper',
+    ['Large hind legs clearly adapted for jumping',
+     'Front wings (tegmina) tough and parchment-like with veins',
+     'May have short cerci at tail — but no pincers',
+     'Includes grasshoppers, crickets, katydids']),
+
+  coleoptera:   res('Coleoptera',   'Beetles',                     '🪲','high',  'Beetle',
+    ['Front wings (elytra) are hard, meeting in a straight line down the back',
+     'Largest insect order — over 400,000 species worldwide',
+     'Very common at light traps',
+     'Hind wings folded beneath elytra when not flying']),
+
+  plecoptera:   res('Plecoptera',   'Stoneflies',                  '🪲','medium','Stonefly',
+    ['Hind wings broader and larger than front wings',
+     'Wings fold flat over abdomen at rest',
+     'Larvae are aquatic — indicators of clean, fast streams',
+     'Adults are weak fliers; almost always found near watercourses']),
+
+  isoptera:     res('Isoptera',     'Termites (winged alates)',    '🐜','high',  'Termite',
+    ['Two pairs of wings nearly equal in length; shed after mating',
+     'Broad waist — no constriction between thorax and abdomen',
+     'Winged reproductives (alates) swarm and are strongly attracted to lights',
+     'Social insects; alates fly only briefly before shedding wings']),
+
+  hymenoptera:  res('Hymenoptera',  'Wasps, Bees & Ants',          '🐝','medium','Hymenoptera',
+    ['Hind wings smaller; linked to fore wings by tiny hooks (hamuli)',
+     'Narrow waist (petiole) between thorax and abdomen — key feature',
+     'Includes wasps, bees, ants (workers wingless), sawflies',
+     'Forewings held above body at rest']),
+
+  mecoptera:    res('Mecoptera',    'Scorpionflies',                '🦟','medium','Mecoptera',
+    ['Head extended downward into a distinctive beak',
+     'Male abdomen tip curls up like a scorpion — completely harmless',
+     'Dense net-like venation; wings often spotted or banded',
+     'Predators and scavengers; attracted to light']),
+
+  odonata:      res('Odonata',      'Dragonflies & Damselflies',   '🐉','low',   'Dragonfly',
+    ['Enormous compound eyes dominate almost the entire head',
+     'Strong, agile fliers — often seen hovering',
+     'Two pairs of wings with dense net-like venation',
+     'Larvae (nymphs) are aquatic predators; found near water']),
+
+  neuroptera:   res('Neuroptera',   'Lacewings & Antlions',        '🦟','medium','Lacewing',
+    ['Net-like venation with many cross-veins at the wing margins',
+     'Weak, fluttery flight',
+     'Includes green lacewings, brown lacewings, antlions',
+     'Larvae are predators of aphids and other soft insects']),
+};
+
+// ── Key tree (verified against the field-trip chart) ───────────────────────────
+const KEY = nd(
+  'Does the insect have wings?',
+  'If you have a larva (grub, caterpillar, maggot) this key does not apply — look for an adult.',
+  [
+    ch('No wings visible', { _t:'no-wings' }),
+    ch('Yes — wings are present',
+      nd('How many wings does it have?',
+        'Count wings on one side and double it. Flies may look 4-winged — check for tiny club-shaped halteres (balancers) behind the wings.',
+        [
+          ch('2 wings (possibly with tiny halteres behind)', R.diptera),
+          ch('4 wings',
+            nd('Are the wings covered with tiny scales?',
+              'Touch a wing lightly — scales rub off as fine powder. Hind wings of some Lepidoptera may be nearly clear.',
+              [
+                ch('Yes — wings have a powdery or dusty appearance', R.lepidoptera),
+                ch('No — wings are clear, membranous or hairy, not scaly',
+                  nd('What type of mouth parts does the insect have?',
+                    'Look at the head: a beak projecting from the front = sucking. No obvious mouthparts = reduced. Visible biting jaws = chewing.',
+                    [
+                      ch('Sucking mouth parts — beak-like structure from the front of the head',
+                        nd('Is the insect tiny (1–2 mm) with very narrow wings fringed with long hairs?', null,
+                          [
+                            ch('Yes — minute insect; wings narrow and fringed like a feather', R.thysanoptera),
+                            ch('No — normal sized; wings not fringed',
+                              nd('What do the front wings look like?', null,
+                                [
+                                  ch('Front wings leathery at base, membranous at tip — or resembling lace', R.hemiptera),
+                                  ch('Wings membranous or slightly thickened, held tent-like over abdomen', R.homoptera),
+                                ]
+                              )
+                            ),
+                          ]
+                        )
+                      ),
+                      ch('Reduced or non-functional mouth parts — adult cannot feed',
+                        nd('Look at the antennae length and wing texture.',
+                          'These insects have very short adult lives, living just long enough to mate.',
+                          [
+                            ch('Antennae short; 2–3 long thread-like tails at abdomen tip; dense netlike wing veins', R.ephemeroptera),
+                            ch('Antennae as long as or longer than body; wings covered in fine hairs (hairy, not scaly)', R.trichoptera),
+                          ]
+                        )
+                      ),
+                      ch('Chewing mouth parts — visible biting mandibles (jaws)',
+                        nd('What do the front wings look like?', null,
+                          [
+                            ch('Front wings parchment-like, leathery or hard — no obvious veins showing through',
+                              nd('Examine the abdomen tip and hind legs.', null,
+                                [
+                                  ch('Pincers (cerci) at the tip of the abdomen', R.dermaptera),
+                                  ch('Large hind legs for jumping — or appendages at abdomen tip (no pincers)', R.orthoptera),
+                                  ch('No pincers, no jumping legs — hard wing-covers meet in a straight line down the back', R.coleoptera),
+                                ],
+                                'abdomenTip'
+                              )
+                            ),
+                            ch('Front wings membranous — thin, transparent or lightly tinted',
+                              nd('Are wings held flat over the body when the insect is at rest?',
+                                'Note: some ants (Hymenoptera) may hold wings fairly flat — always check for a narrow waist.',
+                                [
+                                  ch('Yes — wings lie flat over body at rest',
+                                    nd('Compare hind wing to fore wing size, and look at the waist.', null,
+                                      [
+                                        ch('Hind wing clearly larger and broader than fore wing', R.plecoptera),
+                                        ch('Wings roughly equal in size; waist broad, no narrow constriction', R.isoptera),
+                                      ],
+                                      'hindWingFlat'
+                                    )
+                                  ),
+                                  ch('No — wings held upright, angled, or out to the sides',
+                                    nd('Compare hind wing size to fore wing.', null,
+                                      [
+                                        ch('Hind wing much smaller than fore wing; distinct narrow waist', R.hymenoptera),
+                                        ch('Hind wing nearly the same size as fore wing, or larger',
+                                          nd('Look at the head shape and wing venation.', null,
+                                            [
+                                              ch('Head forms a long downward beak; male abdomen curls up like a scorpion tail', R.mecoptera),
+                                              ch('No beak; wings clearly net-veined throughout',
+                                                nd('How does it fly, and how large are the eyes?', null,
+                                                  [
+                                                    ch('Strong, swift flier; compound eyes take up most of the head', R.odonata),
+                                                    ch('Weak, fluttery flier; eyes visible but relatively small', R.neuroptera),
+                                                  ]
+                                                )
+                                              ),
+                                            ]
+                                          )
+                                        ),
+                                      ],
+                                      'hindWingUp'
+                                    )
+                                  ),
+                                ],
+                                'flatWings'
+                              )
+                            ),
+                          ]
+                        )
+                      ),
+                    ],
+                    'mouthparts'
+                  )
+                ),
+              ],
+              'scales'
+            )
+          ),
+        ],
+        'wingCount'
+      )
+    ),
+  ]
+);
+
+// ── Order metadata + quick-jump list ───────────────────────────────────────────
+const ORDER_META = {};
+Object.values(R).forEach(r => { ORDER_META[r.order] = { emoji: r.emoji, common: r.common }; });
+
+const QUICK = [
+  ['lepidoptera','🦋 Moths'],
+  ['coleoptera','🪲 Beetles'],
+  ['hemiptera','🐛 Bugs'],
+  ['hymenoptera','🐝 Wasps/Bees'],
+  ['diptera','🪰 Flies'],
+  ['ephemeroptera','🦋 Mayflies'],
+  ['neuroptera','🦟 Lacewings'],
+];
+
+const LIGHTS = [
+  { key:'UV',     label:'UV',     emoji:'🟣' },
+  { key:'White',  label:'White',  emoji:'⚪' },
+  { key:'Yellow', label:'Yellow', emoji:'🟡' },
+];
+
+// ── Photo cache + fetcher ─────────────────────────────────────────────────────
+const photoCache = new Map();
+async function fetchPhoto(article) {
+  if (photoCache.has(article)) return photoCache.get(article);
+  try {
+    const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(article)}`);
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    const src = d.thumbnail?.source ?? null;
+    photoCache.set(article, src);
+    return src;
+  } catch {
+    photoCache.set(article, null);
+    return null;
+  }
+}
+
+// ── Persisted state ────────────────────────────────────────────────────────────
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); }
+  catch { return fallback; }
+}
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+let theme = load('lt_theme', null) ||
+  (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+let currentLight = load('lt_light', 'UV');
+if (!LIGHTS.some(l => l.key === currentLight)) currentLight = 'UV';
+let tally = load('lt_tally', null) || { UV:{}, White:{}, Yellow:{} };
+LIGHTS.forEach(l => { if (!tally[l.key]) tally[l.key] = {}; });
+
+let view    = 'identify';
+let history = [];
+let current = KEY;
+
+// ── Elements ───────────────────────────────────────────────────────────────────
+const appEl      = document.getElementById('app');
+const trailEl    = document.getElementById('trail');
+const lightbarEl = document.getElementById('lightbar');
+const themeBtn   = document.getElementById('themeBtn');
+const tabBadge   = document.getElementById('tabBadge');
+const popoverEl  = document.getElementById('popover');
+const toastEl    = document.getElementById('toast');
+
+// ── Utilities ──────────────────────────────────────────────────────────────────
+function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function e(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function glossarize(escapedHtml) {
+  const used = new Set();
+  return escapedHtml.replace(GLOSSARY_RE, (m) => {
+    const canon = FORMS[m.toLowerCase()];
+    if (!canon || used.has(canon)) return m;
+    used.add(canon);
+    return `<button class="term" data-term="${canon}">${m}</button>`;
+  });
+}
+function collectOrders(node) {
+  const out = [];
+  (function walk(n) {
+    if (!n || n._t === 'no-wings') return;
+    if (n._t === 'result') { out.push(n); return; }
+    if (n.choices) n.choices.forEach(c => walk(c.next));
+  })(node);
+  // de-duplicate by order name, preserve order
+  const seen = new Set();
+  return out.filter(r => !seen.has(r.order) && seen.add(r.order));
+}
+function tallyTotal() {
+  let t = 0;
+  LIGHTS.forEach(l => Object.values(tally[l.key]).forEach(n => t += n));
+  return t;
+}
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+// ── Master paint ───────────────────────────────────────────────────────────────
+function paint() {
+  document.documentElement.dataset.theme = theme;
+  themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+  paintBadge();
+
+  if (view === 'identify') {
+    lightbarEl.innerHTML = lightbarHtml();
+    bindLightbar();
+    trailEl.style.display = 'flex';
+    renderIdentify();
+  } else {
+    lightbarEl.innerHTML = '';
+    trailEl.style.display = 'none';
+    trailEl.innerHTML = '';
+    if (view === 'tally') renderTally();
+    else renderTerms();
+  }
+}
+function paintBadge() {
+  const t = tallyTotal();
+  tabBadge.textContent = t;
+  tabBadge.classList.toggle('show', t > 0);
+}
+function lightbarHtml() {
+  return `<div class="lb-label">Logging catches to:</div>
+    <div class="seg" id="seg-light">
+      ${LIGHTS.map(l => `<button data-light="${l.key}" class="${l.key===currentLight?'active':''}">${l.emoji} ${l.label}</button>`).join('')}
+    </div>`;
+}
+function bindLightbar() {
+  lightbarEl.querySelectorAll('[data-light]').forEach(b =>
+    b.addEventListener('click', () => {
+      currentLight = b.dataset.light;
+      save('lt_light', currentLight);
+      lightbarEl.querySelectorAll('[data-light]').forEach(x => x.classList.toggle('active', x.dataset.light === currentLight));
+      // refresh log button label if a result is showing
+      const logBtn = document.getElementById('js-log');
+      if (logBtn) logBtn.textContent = `＋ Log this catch — ${currentLight}`;
+    })
+  );
+}
+
+// ── Identify view ───────────────────────────────────────────────────────────────
+function renderIdentify() {
+  trailEl.innerHTML = history.map((h, i) =>
+    `<span class="chip" title="${e(h.label)}">${e(trunc(h.label, 26))}</span>` +
+    (i < history.length - 1 ? '<span class="sep">›</span>' : '')
+  ).join('');
+
+  if      (current._t === 'result')   renderResult(current);
+  else if (current._t === 'no-wings') renderNoWings();
+  else                                renderQuestion(current);
+}
+
+function renderQuestion(n) {
+  const ck = n.compareKey;
+  const photos = ck ? COMPARE[ck] : null;
+
+  let cmpHtml = '';
+  if (photos) {
+    cmpHtml = `<div class="cmp-grid c${photos.length}">
+      ${photos.map((p, i) =>
+        `<div class="cmp-item" id="cmp-${ck}-${i}">
+          <div class="cmp-ph">${p.emoji}</div>
+          <div class="cmp-cap">${e(p.caption)}</div>
+        </div>`
+      ).join('')}
+    </div>`;
+  }
+
+  // Not-sure panel
+  const nsHtml = `<div class="notsure hidden" id="notsure">
+    <div class="ns-head">Where each answer leads</div>
+    ${n.choices.map(c => {
+      const orders = collectOrders(c.next);
+      const txt = orders.length
+        ? orders.map(o => `${o.emoji} ${e(o.order)}`).join(', ')
+        : 'Not an identification path';
+      return `<div class="ns-choice"><div class="ns-label">${e(c.label)}</div><div class="ns-orders">→ ${txt}</div></div>`;
+    }).join('')}
+    <div class="ns-quick">
+      <div class="ns-head">Or jump straight to a common order</div>
+      <div class="chips">
+        ${QUICK.map(([k,label]) => `<button class="qchip" data-jump="${k}">${e(label)}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+
+  appEl.innerHTML = `
+    <div class="step-label">Step ${history.length + 1}</div>
+    <div class="q-text">${glossarize(e(n.q))}</div>
+    ${n.hint ? `<div class="hint-box">💡 ${glossarize(e(n.hint))}</div>` : ''}
+    ${cmpHtml}
+    <div class="choices">
+      ${n.choices.map((c, i) => `<button class="choice-btn" data-i="${i}">${e(c.label)}</button>`).join('')}
+    </div>
+    <button class="btn-notsure" id="js-notsure">🤔 Not sure? See where each answer leads</button>
+    ${nsHtml}
+    <div class="nav-row">
+      ${history.length ? `<button class="btn-back" id="js-back">← Back</button>
+      <button class="btn-restart" id="js-reset">Start over</button>` : ''}
+    </div>`;
+
+  appEl.querySelectorAll('.choice-btn').forEach(b =>
+    b.addEventListener('click', () => choose(+b.dataset.i))
+  );
+  appEl.querySelector('#js-notsure').addEventListener('click', () => {
+    document.getElementById('notsure').classList.toggle('hidden');
+  });
+  appEl.querySelectorAll('[data-jump]').forEach(b =>
+    b.addEventListener('click', () => quickJump(b.dataset.jump))
+  );
+  appEl.querySelector('#js-back')?.addEventListener('click', goBack);
+  appEl.querySelector('#js-reset')?.addEventListener('click', restart);
+
+  if (photos) {
+    photos.forEach(async (p, i) => {
+      const src = await fetchPhoto(p.article);
+      const item = document.getElementById(`cmp-${ck}-${i}`);
+      if (!src || !item) return;
+      const img = document.createElement('img');
+      img.className = 'cmp-img';
+      img.alt = p.caption;
+      img.loading = 'lazy';
+      img.src = src;
+      item.querySelector('.cmp-ph').replaceWith(img);
+    });
+  }
+}
+
+function renderResult(r) {
+  const ATTRACT = {
+    high:   ['🟡', 'Commonly attracted to light traps',  'attract-high'],
+    medium: ['🔵', 'Sometimes attracted to light traps', 'attract-medium'],
+    low:    ['🔴', 'Rarely attracted to light traps',    'attract-low'],
+  };
+  const [icon, label, cls] = ATTRACT[r.attract];
+
+  appEl.innerHTML = `
+    <div class="photo-wrap" id="result-photo">
+      <div class="photo-placeholder">${r.emoji}</div>
+    </div>
+    <div class="result-top">
+      <div class="result-label">Order identified</div>
+      <div class="result-order">${e(r.order)}</div>
+      <div class="result-common">${e(r.common)}</div>
+      <span class="attract-badge ${cls}">${icon} ${e(label)}</span>
+    </div>
+    <div class="features">
+      <div class="features-label">Key features</div>
+      <ul>${r.facts.map(f => `<li>${glossarize(e(f))}</li>`).join('')}</ul>
+    </div>
+    <div class="result-nav">
+      <button class="btn-log"       id="js-log">＋ Log this catch — ${currentLight}</button>
+      <button class="btn-primary"   id="js-again">Identify another insect</button>
+      <button class="btn-secondary" id="js-back2">← Back</button>
+    </div>`;
+
+  appEl.querySelector('#js-log').addEventListener('click', () => logCatch(r.order));
+  appEl.querySelector('#js-again').addEventListener('click', restart);
+  appEl.querySelector('#js-back2').addEventListener('click', goBack);
+
+  if (r.wiki) {
+    fetchPhoto(r.wiki).then(src => {
+      const wrap = document.getElementById('result-photo');
+      if (!src || !wrap) return;
+      wrap.innerHTML = `<img src="${src}" alt="${e(r.common)}"><span class="photo-credit">© Wikipedia</span>`;
+    });
+  }
+}
+
+function renderNoWings() {
+  appEl.innerHTML = `
+    <div class="q-text">This key is for winged adult insects.</div>
+    <div class="no-wings-box">
+      <strong>Possible explanations:</strong>
+      Your specimen may be a larva (grub, caterpillar, maggot), a wingless adult species,
+      or a wingless form such as a worker ant or a flea.<br><br>
+      Common wingless or rarely-winged groups: silverfish (Zygentoma), springtails (Collembola),
+      fleas (Siphonaptera), lice (Phthiraptera), worker ants (Hymenoptera).
+    </div>
+    <div class="nav-row" style="margin-top:16px">
+      <button class="btn-back"    id="js-back">← Back</button>
+      <button class="btn-restart" id="js-reset">Start over</button>
+    </div>`;
+  appEl.querySelector('#js-back').addEventListener('click', goBack);
+  appEl.querySelector('#js-reset').addEventListener('click', restart);
+}
+
+// ── Tally view ───────────────────────────────────────────────────────────────────
+function tallyData() {
+  const orders = new Set();
+  LIGHTS.forEach(l => Object.keys(tally[l.key]).forEach(o => { if (tally[l.key][o] > 0) orders.add(o); }));
+  const list = [...orders].sort();
+  const colTotals = {}; LIGHTS.forEach(l => colTotals[l.key] = 0);
+  let grand = 0;
+  list.forEach(o => LIGHTS.forEach(l => { const n = tally[l.key][o] || 0; colTotals[l.key] += n; grand += n; }));
+  return { list, colTotals, grand };
+}
+
+function renderTally() {
+  const { list, colTotals, grand } = tallyData();
+  if (!list.length) {
+    appEl.innerHTML = `<div class="empty">📋 <b>No catches logged yet.</b><br>
+      On the <b>Identify</b> tab, pick the light colour you're sampling, work down to an order,
+      then tap <b>Log this catch</b> to build your tally.</div>`;
+    return;
+  }
+  appEl.innerHTML = `
+    <table class="tally-table">
+      <thead><tr><th>Order</th>${LIGHTS.map(l => `<th>${l.emoji}<br>${l.label}</th>`).join('')}<th>Total</th></tr></thead>
+      <tbody>
+        ${list.map(o => {
+          const row = LIGHTS.map(l => tally[l.key][o] || 0);
+          const tot = row.reduce((a,b)=>a+b,0);
+          const meta = ORDER_META[o] || {emoji:'🐞'};
+          return `<tr>
+            <td>${meta.emoji} ${e(o)}</td>
+            ${row.map(n => `<td class="${n?'':'zero'}">${n||'·'}</td>`).join('')}
+            <td><b>${tot}</b></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+      <tfoot><tr><td>All</td>${LIGHTS.map(l => `<td>${colTotals[l.key]}</td>`).join('')}<td>${grand}</td></tr></tfoot>
+    </table>
+    <div class="tally-actions">
+      <button class="btn-export" id="js-export">⬇ Export CSV</button>
+      <button class="btn-clear"  id="js-clear">Clear</button>
+    </div>
+    <div id="csv-area"></div>`;
+
+  appEl.querySelector('#js-export').addEventListener('click', exportCSV);
+  appEl.querySelector('#js-clear').addEventListener('click', clearTally);
+}
+
+function buildCSV() {
+  const { list } = tallyData();
+  const rows = [['Order', ...LIGHTS.map(l => l.key), 'Total']];
+  list.forEach(o => {
+    const cells = LIGHTS.map(l => tally[l.key][o] || 0);
+    rows.push([o, ...cells, cells.reduce((a,b)=>a+b,0)]);
+  });
+  return rows.map(r => r.join(',')).join('\n');
+}
+
+function exportCSV() {
+  const csv = buildCSV();
+  try {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `light-trap-tally-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('CSV downloaded ✓');
+  } catch {
+    // Fallback (e.g. iOS Safari): show selectable text
+    const area = document.getElementById('csv-area');
+    area.innerHTML = `<textarea class="csv-out" readonly>${e(csv)}</textarea>
+      <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Download blocked — long-press to select & copy.</div>`;
+    area.querySelector('textarea').focus();
+    area.querySelector('textarea').select();
+  }
+}
+
+function clearTally() {
+  if (!confirm('Clear ALL logged catches? This cannot be undone.')) return;
+  tally = { UV:{}, White:{}, Yellow:{} };
+  save('lt_tally', tally);
+  paintBadge();
+  renderTally();
+  toast('Tally cleared');
+}
+
+function logCatch(order) {
+  tally[currentLight][order] = (tally[currentLight][order] || 0) + 1;
+  save('lt_tally', tally);
+  paintBadge();
+  toast(`Logged ${order} → ${currentLight} ✓`);
+}
+
+// ── Terms view ───────────────────────────────────────────────────────────────────
+function renderTerms() {
+  const keys = Object.keys(GDEF).sort();
+  appEl.innerHTML = `
+    <div class="terms-intro">Common terms used in the key. Tap any underlined word inside a question to see its definition.</div>
+    ${keys.map(k => `<div class="term-row">
+      <div class="term-name">${e(k)}</div>
+      <div class="term-def">${e(GDEF[k])}</div>
+    </div>`).join('')}`;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function choose(i) {
+  const c = current.choices[i];
+  history.push({ node: current, label: c.label });
+  current = c.next;
+  paint();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function quickJump(key) {
+  history = [{ node: KEY, label: 'Quick jump' }];
+  current = R[key];
+  paint();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function goBack() {
+  if (!history.length) { current = KEY; }
+  else { current = history.pop().node; }
+  paint();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function restart() {
+  history = [];
+  current = KEY;
+  paint();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Global listeners ────────────────────────────────────────────────────────────
+themeBtn.addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  save('lt_theme', theme);
+  paint();
+});
+document.querySelectorAll('.tab').forEach(t =>
+  t.addEventListener('click', () => { view = t.dataset.view; paint(); window.scrollTo({top:0}); })
+);
+// Glossary term clicks (delegated)
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest('.term');
+  if (t) {
+    const canon = t.dataset.term;
+    popoverEl.innerHTML = `<div class="pop-card">
+      <div class="pop-term">${e(canon)}</div>
+      <div class="pop-def">${e(GDEF[canon] || '')}</div>
+      <button class="pop-close">Got it</button>
+    </div>`;
+    popoverEl.classList.add('show');
+  }
+});
+popoverEl.addEventListener('click', (ev) => {
+  if (ev.target === popoverEl || ev.target.classList.contains('pop-close')) {
+    popoverEl.classList.remove('show');
+  }
+});
+
+paint();
+</script>
+</body>
+</html>
