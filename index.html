@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#2e7d32">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Insect ID">
   <title>Insect Order Identifier · Light Trap Prac</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,6 +59,17 @@
     .theme-btn:hover { box-shadow: 0 4px 14px var(--ring); }
     .theme-btn:active { transform: translateY(-50%) scale(.9); }
 
+    /* ── Notice banner ── */
+    #notice:not(:empty) { margin-bottom: 10px; }
+    .notice { background: #e3f2fd; border: 1px solid #b6dcf5; color: #1a4e6e; border-radius: 14px; padding: 12px 12px 12px 14px; font-size: .82rem; line-height: 1.5; display: flex; gap: 10px; align-items: flex-start; box-shadow: var(--shadow-sm); }
+    .notice.warn { background: #fdecea; border-color: #f5c6c0; color: #7c1f17; }
+    [data-theme="dark"] .notice { background: #13314a; border-color: #1f4a6e; color: #bce0fb; }
+    [data-theme="dark"] .notice.warn { background: #3a1813; border-color: #5e2a22; color: #f0b9b0; }
+    .nt-body { flex: 1; }
+    .nt-open { display: inline-block; margin-top: 7px; background: var(--green); color: #fff; text-decoration: none; font-weight: 700; font-size: .78rem; padding: 8px 13px; border-radius: 10px; }
+    .nt-x { background: none; border: none; color: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer; opacity: .55; padding: 0 2px; -webkit-tap-highlight-color: transparent; }
+    .nt-x:hover { opacity: 1; }
+
     /* ── Tabs ── */
     .tabs { display: flex; gap: 4px; margin-bottom: 12px; background: var(--card); padding: 5px; border-radius: 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); position: sticky; top: 6px; z-index: 20; backdrop-filter: saturate(1.4); }
     .tab { flex: 1; background: transparent; border: none; border-radius: 12px; padding: 11px 6px; font-size: .8rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: color .15s, background .2s, transform .1s; -webkit-tap-highlight-color: transparent; }
@@ -65,6 +83,10 @@
     /* ── Light bar ── */
     #lightbar:not(:empty) { margin-bottom: 10px; }
     .lb-label { font-size: .68rem; color: var(--muted); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .grp-wrap { margin-bottom: 12px; }
+    .grp-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 13px; font-size: .92rem; color: var(--text); box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .15s; -webkit-tap-highlight-color: transparent; }
+    .grp-input::placeholder { color: var(--muted); opacity: .65; }
+    .grp-input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px var(--ring); }
     .seg { display: flex; gap: 5px; background: var(--card); padding: 5px; border-radius: 14px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
     .seg button { flex: 1; background: transparent; border: none; border-radius: 10px; padding: 10px 4px; font-size: .82rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: .18s; -webkit-tap-highlight-color: transparent; }
     .seg button.active { background: var(--green-l); color: var(--green-d); box-shadow: inset 0 0 0 1.5px var(--green-m); }
@@ -173,11 +195,13 @@
     .tally-table td:first-child, .tally-table th:first-child { text-align: left; font-weight: 600; }
     .tally-table tfoot td { font-weight: 800; border-top: 2px solid var(--border); border-bottom: none; color: var(--green); }
     .tally-table .zero { color: var(--border); }
-    .tally-actions { display: flex; gap: 8px; margin-top: 18px; }
+    .csv-note { font-size: .74rem; color: var(--muted); line-height: 1.5; margin-top: 14px; padding: 10px 12px; background: var(--green-l); border-radius: 10px; }
+    .tally-actions { display: flex; gap: 8px; margin-top: 12px; }
     .btn-export { flex: 1; background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); border: none; border-radius: 13px; padding: 14px; color: #fff; font-weight: 700; font-size: .88rem; cursor: pointer; box-shadow: 0 5px 16px var(--ring); transition: filter .15s, transform .1s; -webkit-tap-highlight-color: transparent; }
     .btn-export:hover { filter: brightness(1.05); }
     .btn-export:active { transform: scale(.98); }
-    .btn-clear { background: none; border: 2px solid var(--border); border-radius: 12px; padding: 13px 16px; color: var(--muted); font-size: .88rem; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .btn-clear, .btn-copy { background: none; border: 2px solid var(--border); border-radius: 13px; padding: 13px 15px; color: var(--muted); font-size: .88rem; font-weight: 600; cursor: pointer; transition: border-color .12s; -webkit-tap-highlight-color: transparent; }
+    .btn-clear:hover, .btn-copy:hover { border-color: var(--muted); color: var(--text); }
     .empty { text-align: center; color: var(--muted); padding: 36px 12px; font-size: .92rem; line-height: 1.7; }
     .csv-out { width: 100%; height: 150px; margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px; font-family: monospace; font-size: .75rem; background: var(--bg); color: var(--text); resize: vertical; }
 
@@ -210,6 +234,7 @@
     </div>
     <p class="subtitle">Light Trapping Field Prac · BZ2490-5990</p>
   </header>
+  <div id="notice"></div>
   <nav class="tabs">
     <button class="tab" data-view="identify">🔍 Identify</button>
     <button class="tab" data-view="tally">📋 Tally<span class="badge" id="tabBadge"></span></button>
@@ -576,12 +601,20 @@ function load(key, fallback) {
 }
 function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 
+// Will saved data actually persist here? (false in private mode or some embeds)
+let storageOK = true;
+try { localStorage.setItem('lt_probe', '1'); localStorage.removeItem('lt_probe'); } catch { storageOK = false; }
+// Are we running inside an iframe (e.g. embedded in ThingLink)?
+const embedded = (() => { try { return window.self !== window.top; } catch { return true; } })();
+let noticeDismissed = false;
+
 let theme = load('lt_theme', null) ||
   (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 let currentLight = load('lt_light', 'UV');
 if (!LIGHTS.some(l => l.key === currentLight)) currentLight = 'UV';
-let tally = load('lt_tally', null) || { UV:{}, White:{}, Yellow:{} };
-LIGHTS.forEach(l => { if (!tally[l.key]) tally[l.key] = {}; });
+let currentGroup = load('lt_group', '') || '';
+// logs: one entry per catch → { t:<epoch ms>, group, light, order }
+let logs = load('lt_logs', null) || [];
 
 let view    = 'identify';
 let history = [];
@@ -595,6 +628,7 @@ const themeBtn   = document.getElementById('themeBtn');
 const tabBadge   = document.getElementById('tabBadge');
 const popoverEl  = document.getElementById('popover');
 const toastEl    = document.getElementById('toast');
+const noticeEl   = document.getElementById('notice');
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
 function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
@@ -619,10 +653,13 @@ function collectOrders(node) {
   const seen = new Set();
   return out.filter(r => !seen.has(r.order) && seen.add(r.order));
 }
-function tallyTotal() {
-  let t = 0;
-  LIGHTS.forEach(l => Object.values(tally[l.key]).forEach(n => t += n));
-  return t;
+function tallyTotal() { return logs.length; }
+function pad2(n) { return String(n).padStart(2, '0'); }
+function fmtDate(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function fmtTime(d) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
+function csvCell(v) {
+  const s = String(v == null ? '' : v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 function toast(msg) {
   toastEl.textContent = msg;
@@ -657,12 +694,23 @@ function paintBadge() {
   tabBadge.classList.toggle('show', t > 0);
 }
 function lightbarHtml() {
-  return `<div class="lb-label">Logging catches to:</div>
+  return `
+    <div class="grp-wrap">
+      <div class="lb-label">Your group colour / name</div>
+      <input id="grp-input" class="grp-input" type="text" inputmode="text" autocomplete="off"
+             maxlength="40" placeholder="e.g. Red group" value="${e(currentGroup)}">
+    </div>
+    <div class="lb-label">Logging catches to:</div>
     <div class="seg" id="seg-light">
       ${LIGHTS.map(l => `<button data-light="${l.key}" class="${l.key===currentLight?'active':''}">${l.emoji} ${l.label}</button>`).join('')}
     </div>`;
 }
 function bindLightbar() {
+  const gi = lightbarEl.querySelector('#grp-input');
+  if (gi) gi.addEventListener('input', () => {
+    currentGroup = gi.value;
+    save('lt_group', currentGroup);
+  });
   lightbarEl.querySelectorAll('[data-light]').forEach(b =>
     b.addEventListener('click', () => {
       currentLight = b.dataset.light;
@@ -824,21 +872,26 @@ function renderNoWings() {
 
 // ── Tally view ───────────────────────────────────────────────────────────────────
 function tallyData() {
+  const counts = {}; LIGHTS.forEach(l => counts[l.key] = {});
+  logs.forEach(l => {
+    if (!counts[l.light]) counts[l.light] = {};
+    counts[l.light][l.order] = (counts[l.light][l.order] || 0) + 1;
+  });
   const orders = new Set();
-  LIGHTS.forEach(l => Object.keys(tally[l.key]).forEach(o => { if (tally[l.key][o] > 0) orders.add(o); }));
+  LIGHTS.forEach(l => Object.keys(counts[l.key]).forEach(o => { if (counts[l.key][o] > 0) orders.add(o); }));
   const list = [...orders].sort();
   const colTotals = {}; LIGHTS.forEach(l => colTotals[l.key] = 0);
   let grand = 0;
-  list.forEach(o => LIGHTS.forEach(l => { const n = tally[l.key][o] || 0; colTotals[l.key] += n; grand += n; }));
-  return { list, colTotals, grand };
+  list.forEach(o => LIGHTS.forEach(l => { const n = counts[l.key][o] || 0; colTotals[l.key] += n; grand += n; }));
+  return { list, colTotals, grand, counts };
 }
 
 function renderTally() {
-  const { list, colTotals, grand } = tallyData();
+  const { list, colTotals, grand, counts } = tallyData();
   if (!list.length) {
     appEl.innerHTML = `<div class="empty">📋 <b>No catches logged yet.</b><br>
-      On the <b>Identify</b> tab, pick the light colour you're sampling, work down to an order,
-      then tap <b>Log this catch</b> to build your tally.</div>`;
+      On the <b>Identify</b> tab, enter your group colour, pick the light you're sampling,
+      work down to an order, then tap <b>Log this catch</b> to build your tally.</div>`;
     return;
   }
   appEl.innerHTML = `
@@ -846,7 +899,7 @@ function renderTally() {
       <thead><tr><th>Order</th>${LIGHTS.map(l => `<th>${l.emoji}<br>${l.label}</th>`).join('')}<th>Total</th></tr></thead>
       <tbody>
         ${list.map(o => {
-          const row = LIGHTS.map(l => tally[l.key][o] || 0);
+          const row = LIGHTS.map(l => counts[l.key][o] || 0);
           const tot = row.reduce((a,b)=>a+b,0);
           const meta = ORDER_META[o] || {emoji:'🐞'};
           return `<tr>
@@ -858,24 +911,35 @@ function renderTally() {
       </tbody>
       <tfoot><tr><td>All</td>${LIGHTS.map(l => `<td>${colTotals[l.key]}</td>`).join('')}<td>${grand}</td></tr></tfoot>
     </table>
+    <div class="csv-note">📄 CSV export records every catch as its own row with <b>date, time, group, light & order</b>.</div>
     <div class="tally-actions">
       <button class="btn-export" id="js-export">⬇ Export CSV</button>
+      <button class="btn-copy"   id="js-copy">Copy</button>
       <button class="btn-clear"  id="js-clear">Clear</button>
     </div>
     <div id="csv-area"></div>`;
 
   appEl.querySelector('#js-export').addEventListener('click', exportCSV);
+  appEl.querySelector('#js-copy').addEventListener('click', copyCSV);
   appEl.querySelector('#js-clear').addEventListener('click', clearTally);
 }
 
 function buildCSV() {
-  const { list } = tallyData();
-  const rows = [['Order', ...LIGHTS.map(l => l.key), 'Total']];
-  list.forEach(o => {
-    const cells = LIGHTS.map(l => tally[l.key][o] || 0);
-    rows.push([o, ...cells, cells.reduce((a,b)=>a+b,0)]);
+  const header = ['Date', 'Time', 'Group', 'Light', 'Order'];
+  const rows = logs.slice().sort((a, b) => (a.t || 0) - (b.t || 0)).map(l => {
+    const d = l.t ? new Date(l.t) : null;
+    return [d ? fmtDate(d) : '', d ? fmtTime(d) : '', l.group || '', l.light, l.order];
   });
-  return rows.map(r => r.join(',')).join('\n');
+  return [header, ...rows].map(r => r.map(csvCell).join(',')).join('\n');
+}
+
+function showCSVText(csv, note) {
+  const area = document.getElementById('csv-area');
+  if (!area) return;
+  area.innerHTML = `<textarea class="csv-out" readonly>${e(csv)}</textarea>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:6px">${e(note || 'Long-press inside the box to Select All, then Copy.')}</div>`;
+  const ta = area.querySelector('textarea');
+  ta.focus(); ta.select();
 }
 
 function exportCSV() {
@@ -885,36 +949,43 @@ function exportCSV() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `light-trap-tally-${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `light-trap-tally-${fmtDate(new Date())}.csv`;
+    a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('CSV downloaded ✓');
   } catch {
-    // Fallback (e.g. iOS Safari): show selectable text
-    const area = document.getElementById('csv-area');
-    area.innerHTML = `<textarea class="csv-out" readonly>${e(csv)}</textarea>
-      <div style="font-size:.75rem;color:var(--muted);margin-top:6px">Download blocked — long-press to select & copy.</div>`;
-    area.querySelector('textarea').focus();
-    area.querySelector('textarea').select();
+    showCSVText(csv, 'Download was blocked here (often an embedded view) — copy the text below instead.');
+  }
+}
+
+function copyCSV() {
+  const csv = buildCSV();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(csv)
+      .then(() => toast('CSV copied to clipboard ✓'))
+      .catch(() => showCSVText(csv));
+  } else {
+    showCSVText(csv);
   }
 }
 
 function clearTally() {
   if (!confirm('Clear ALL logged catches? This cannot be undone.')) return;
-  tally = { UV:{}, White:{}, Yellow:{} };
-  save('lt_tally', tally);
+  logs = [];
+  save('lt_logs', logs);
   paintBadge();
   renderTally();
   toast('Tally cleared');
 }
 
 function logCatch(order) {
-  tally[currentLight][order] = (tally[currentLight][order] || 0) + 1;
-  save('lt_tally', tally);
+  logs.push({ t: Date.now(), group: currentGroup, light: currentLight, order });
+  save('lt_logs', logs);
   paintBadge();
-  toast(`Logged ${order} → ${currentLight} ✓`);
+  toast(`Logged ${order} → ${currentLight}${currentGroup ? ' · ' + currentGroup : ''} ✓`);
 }
 
 // ── Terms view ───────────────────────────────────────────────────────────────────
@@ -983,7 +1054,36 @@ popoverEl.addEventListener('click', (ev) => {
   }
 });
 
+// ── First-run notice (embedded view / storage blocked) ─────────────────────────
+function renderNotice() {
+  if (noticeDismissed) { noticeEl.innerHTML = ''; return; }
+  let cls = '', msg = '';
+  if (!storageOK) {
+    cls = 'warn';
+    msg = `<b>Heads-up:</b> this browser isn't saving data (private/incognito mode, or an embedded view), so your group name and tally won't be kept. Open it in a normal browser tab to log catches.`;
+  } else if (embedded) {
+    msg = `<b>Embedded view.</b> Browsing the key works fine here. To <b>log catches</b> and keep your tally on your device, open it full-screen first.`;
+  } else {
+    noticeEl.innerHTML = '';
+    return;
+  }
+  const openBtn = `<a class="nt-open" href="${e(location.href)}" target="_blank" rel="noopener">Open full screen ↗</a>`;
+  noticeEl.innerHTML = `<div class="notice ${cls}">
+    <div class="nt-body">${msg}<br>${openBtn}</div>
+    <button class="nt-x" id="nt-x" aria-label="Dismiss">✕</button>
+  </div>`;
+  document.getElementById('nt-x').addEventListener('click', () => { noticeDismissed = true; noticeEl.innerHTML = ''; });
+}
+
 paint();
+renderNotice();
+
+// ── Offline support: register the service worker ────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>

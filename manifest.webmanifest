@@ -1,0 +1,14 @@
+{
+  "name": "Insect Order Identifier",
+  "short_name": "Insect ID",
+  "description": "Dichotomous key to identify winged insect orders for the Light Trapping field prac (BZ2490-5990).",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eaf0e7",
+  "theme_color": "#2e7d32",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
