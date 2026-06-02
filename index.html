@@ -48,7 +48,7 @@
       --ring: rgba(116,207,115,.3);
     }
     html { -webkit-text-size-adjust: 100%; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; background: var(--bg); background-image: radial-gradient(1200px 500px at 50% -10%, var(--bg2), transparent 70%); background-attachment: fixed; min-height: 100dvh; padding: 8px 14px calc(48px + env(safe-area-inset-bottom)); color: var(--text); transition: background-color .3s, color .3s; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; background: var(--bg); background-image: radial-gradient(1200px 500px at 50% -10%, var(--bg2), transparent 70%); background-attachment: fixed; min-height: 100dvh; padding: calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)); color: var(--text); transition: background-color .3s, color .3s; }
     .wrap { max-width: 480px; margin: 0 auto; }
 
     header { padding: 20px 0 14px; }
@@ -71,7 +71,7 @@
     .nt-x:hover { opacity: 1; }
 
     /* ── Tabs ── */
-    .tabs { display: flex; gap: 4px; margin-bottom: 12px; background: var(--card); padding: 5px; border-radius: 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); position: sticky; top: 6px; z-index: 20; backdrop-filter: saturate(1.4); }
+    .tabs { display: flex; gap: 4px; margin-bottom: 12px; background: var(--card); padding: 5px; border-radius: 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); position: sticky; top: calc(6px + env(safe-area-inset-top)); z-index: 20; backdrop-filter: saturate(1.4); }
     .tab { flex: 1; background: transparent; border: none; border-radius: 12px; padding: 11px 6px; font-size: .8rem; font-weight: 700; color: var(--muted); cursor: pointer; transition: color .15s, background .2s, transform .1s; -webkit-tap-highlight-color: transparent; }
     .tab.active { background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); color: #fff; box-shadow: 0 4px 12px var(--ring); }
     .tab:not(.active):hover { color: var(--text); background: var(--green-l); }
