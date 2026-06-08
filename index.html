@@ -195,6 +195,17 @@
     .tally-table td:first-child, .tally-table th:first-child { text-align: left; font-weight: 600; }
     .tally-table tfoot td { font-weight: 800; border-top: 2px solid var(--border); border-bottom: none; color: var(--green); }
     .tally-table .zero { color: var(--border); }
+    /* ── Recent catches (editable log) ── */
+    .rc-head { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin: 20px 0 8px; }
+    .rc-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .rc-row { display: flex; align-items: center; gap: 8px; padding: 9px 6px 9px 11px; background: var(--bg2); border: 1px solid var(--border); border-radius: 11px; animation: fade .2s; }
+    .rc-main { flex: 1; min-width: 0; }
+    .rc-order { font-size: .86rem; font-weight: 700; color: var(--text); }
+    .rc-meta { font-size: .72rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rc-del { flex: none; background: none; border: none; color: var(--muted); font-size: 1.05rem; line-height: 1; padding: 8px 10px; border-radius: 9px; cursor: pointer; transition: background .12s, color .12s; -webkit-tap-highlight-color: transparent; }
+    .rc-del:hover, .rc-del:active { background: #fdecea; color: #7c1f17; }
+    [data-theme="dark"] .rc-del:hover, [data-theme="dark"] .rc-del:active { background: #3a1813; color: #f0b9b0; }
+
     .csv-note { font-size: .74rem; color: var(--muted); line-height: 1.5; margin-top: 14px; padding: 10px 12px; background: var(--green-l); border-radius: 10px; }
     .tally-actions { display: flex; gap: 8px; margin-top: 12px; }
     .btn-export { flex: 1; background: linear-gradient(135deg, var(--green) 0%, var(--accent) 100%); border: none; border-radius: 13px; padding: 14px; color: #fff; font-weight: 700; font-size: .88rem; cursor: pointer; box-shadow: 0 5px 16px var(--ring); transition: filter .15s, transform .1s; -webkit-tap-highlight-color: transparent; }
@@ -221,8 +232,11 @@
     .pop-close { margin-top: 16px; width: 100%; background: var(--green); border: none; border-radius: 12px; padding: 12px; color: #fff; font-weight: 700; font-size: .9rem; cursor: pointer; }
 
     /* ── Toast ── */
-    #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--green-d); color: #fff; padding: 12px 20px; border-radius: 24px; font-size: .85rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 60; box-shadow: 0 4px 18px rgba(0,0,0,.3); }
-    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); display: flex; align-items: center; gap: 12px; max-width: calc(100% - 32px); background: var(--green-d); color: #fff; padding: 11px 12px 11px 18px; border-radius: 24px; font-size: .85rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 60; box-shadow: 0 4px 18px rgba(0,0,0,.3); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    .toast-msg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .toast-undo { flex: none; background: rgba(255,255,255,.22); border: none; color: #fff; font-weight: 800; font-size: .82rem; padding: 7px 14px; border-radius: 16px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .toast-undo:active { background: rgba(255,255,255,.35); }
   </style>
 </head>
 <body>
@@ -613,8 +627,15 @@ let theme = load('lt_theme', null) ||
 let currentLight = load('lt_light', 'UV');
 if (!LIGHTS.some(l => l.key === currentLight)) currentLight = 'UV';
 let currentGroup = load('lt_group', '') || '';
-// logs: one entry per catch → { t:<epoch ms>, group, light, order }
+// logs: one entry per catch → { id, t:<epoch ms>, group, light, order }
 let logs = load('lt_logs', null) || [];
+function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+// ensure every entry has a stable id (for delete/undo)
+(() => {
+  let changed = false;
+  logs.forEach(l => { if (!l.id) { l.id = newId(); changed = true; } });
+  if (changed) save('lt_logs', logs);
+})();
 
 let view    = 'identify';
 let history = [];
@@ -661,12 +682,19 @@ function csvCell(v) {
   const s = String(v == null ? '' : v);
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
-function toast(msg) {
-  toastEl.textContent = msg;
+function hideToast() { toastEl.classList.remove('show'); clearTimeout(showToast._t); }
+function showToast(msg, undoFn) {
+  toastEl.innerHTML = `<span class="toast-msg"></span>` +
+    (undoFn ? `<button class="toast-undo" id="toast-undo">Undo</button>` : '');
+  toastEl.querySelector('.toast-msg').textContent = msg;
   toastEl.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => toastEl.classList.remove('show'), 1800);
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(hideToast, undoFn ? 5000 : 1800);
+  if (undoFn) {
+    toastEl.querySelector('#toast-undo').addEventListener('click', () => { hideToast(); undoFn(); });
+  }
 }
+function toast(msg) { showToast(msg, null); }
 
 // ── Master paint ───────────────────────────────────────────────────────────────
 function paint() {
@@ -911,6 +939,21 @@ function renderTally() {
       </tbody>
       <tfoot><tr><td>All</td>${LIGHTS.map(l => `<td>${colTotals[l.key]}</td>`).join('')}<td>${grand}</td></tr></tfoot>
     </table>
+    <div class="rc-head">Recent catches — tap ✕ to remove a mistake</div>
+    <div class="rc-list">
+      ${logs.slice().sort((a, b) => (b.t || 0) - (a.t || 0)).map(l => {
+        const meta = ORDER_META[l.order] || { emoji: '🐞' };
+        const d = l.t ? new Date(l.t) : null;
+        const when = d ? `${pad2(d.getDate())}/${pad2(d.getMonth()+1)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}` : '—';
+        return `<div class="rc-row">
+          <div class="rc-main">
+            <div class="rc-order">${meta.emoji} ${e(l.order)}</div>
+            <div class="rc-meta">${when} · ${e(l.light)}${l.group ? ' · ' + e(l.group) : ''}</div>
+          </div>
+          <button class="rc-del" data-del="${e(l.id)}" aria-label="Remove this catch">✕</button>
+        </div>`;
+      }).join('')}
+    </div>
     <div class="csv-note">📄 CSV export records every catch as its own row with <b>date, time, group, light & order</b>.</div>
     <div class="tally-actions">
       <button class="btn-export" id="js-export">⬇ Export CSV</button>
@@ -922,6 +965,9 @@ function renderTally() {
   appEl.querySelector('#js-export').addEventListener('click', exportCSV);
   appEl.querySelector('#js-copy').addEventListener('click', copyCSV);
   appEl.querySelector('#js-clear').addEventListener('click', clearTally);
+  appEl.querySelectorAll('[data-del]').forEach(b =>
+    b.addEventListener('click', () => deleteLog(b.dataset.del))
+  );
 }
 
 function buildCSV() {
@@ -982,10 +1028,26 @@ function clearTally() {
 }
 
 function logCatch(order) {
-  logs.push({ t: Date.now(), group: currentGroup, light: currentLight, order });
+  const entry = { id: newId(), t: Date.now(), group: currentGroup, light: currentLight, order };
+  logs.push(entry);
   save('lt_logs', logs);
   paintBadge();
-  toast(`Logged ${order} → ${currentLight}${currentGroup ? ' · ' + currentGroup : ''} ✓`);
+  if (view === 'tally') renderTally();
+  showToast(`Logged ${order} → ${currentLight}${currentGroup ? ' · ' + currentGroup : ''}`, () => {
+    logs = logs.filter(l => l.id !== entry.id);
+    save('lt_logs', logs);
+    paintBadge();
+    if (view === 'tally') renderTally();
+    toast('Catch removed');
+  });
+}
+
+function deleteLog(id) {
+  logs = logs.filter(l => l.id !== id);
+  save('lt_logs', logs);
+  paintBadge();
+  renderTally();
+  toast('Catch removed');
 }
 
 // ── Terms view ───────────────────────────────────────────────────────────────────
