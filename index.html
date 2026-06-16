@@ -677,6 +677,7 @@ function collectOrders(node) {
 function tallyTotal() { return logs.length; }
 function pad2(n) { return String(n).padStart(2, '0'); }
 function fmtDate(d) { return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function fmtDateDMY(d) { return `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}`; }
 function fmtTime(d) { return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
 function csvCell(v) {
   const s = String(v == null ? '' : v);
@@ -974,7 +975,7 @@ function buildCSV() {
   const header = ['Date', 'Time', 'Group', 'Light', 'Order'];
   const rows = logs.slice().sort((a, b) => (a.t || 0) - (b.t || 0)).map(l => {
     const d = l.t ? new Date(l.t) : null;
-    return [d ? fmtDate(d) : '', d ? fmtTime(d) : '', l.group || '', l.light, l.order];
+    return [d ? fmtDateDMY(d) : '', d ? fmtTime(d) : '', l.group || '', l.light, l.order];
   });
   return [header, ...rows].map(r => r.map(csvCell).join(',')).join('\n');
 }
